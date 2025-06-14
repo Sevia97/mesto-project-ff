@@ -11,6 +11,10 @@ export function deleteCard(cardElement, cardId) {
     });
 }
 
+export function handleDeleteCard(element, id) {
+  return deleteCard(element, id).catch(console.error);
+}
+
 export function handleLikeCard(likeButton, cardId, likeCountElement, currentUserId) {
   const isLiked = likeButton.classList.contains('card__like-button_is-active');
   const likePromise = isLiked ? unlikeCard(cardId) : likeCard(cardId);

@@ -32,7 +32,9 @@ const hideInputError = (formElement, inputElement, settings) => {
 
 // Проверка валидности текстового поля
 const isValidTextInput = (inputElement) => {
-  const regex = /^[a-zA-Zа-яА-ЯёЁ\s-]+$/;
+  if (!inputElement.pattern) return true;
+  
+  const regex = new RegExp(inputElement.pattern);
   return regex.test(inputElement.value);
 };
 
@@ -58,6 +60,16 @@ const checkInputValidity = (formElement, inputElement, settings) => {
     return false;
   }
 
+  if (inputElement.pattern && !isValidTextInput(inputElement)) {
+    showInputError(
+      formElement,
+      inputElement,
+      'Разрешены только латинские, кириллические буквы, знаки дефиса и пробелы',
+      settings
+    );
+    return false;
+  }
+
   if (!inputElement.validity.valid) {
     showInputError(
       formElement,
@@ -67,6 +79,7 @@ const checkInputValidity = (formElement, inputElement, settings) => {
     );
     return false;
   }
+  
   hideInputError(formElement, inputElement, settings);
   return true;
 };
@@ -108,10 +121,6 @@ export const enableValidation = (settings) => {
   const formList = Array.from(document.querySelectorAll(settings.formSelector));
   
   formList.forEach((formElement) => {
-    formElement.addEventListener('submit', (evt) => {
-      evt.preventDefault();
-    });
-
     setEventListeners(formElement, settings);
   });
 };
@@ -127,7 +136,6 @@ export const clearValidation = (formElement, settings) => {
     hideInputError(formElement, inputElement, settings);
   });
 
-  buttonElement.classList.add(settings.inactiveButtonClass);
-  buttonElement.disabled = true;
+  toggleButtonState([{ validity: { valid: false } }], buttonElement, settings);
 };
 

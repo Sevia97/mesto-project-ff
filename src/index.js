@@ -1,4 +1,4 @@
-import { createCard, deleteCard, handleLikeCard } from './components/card.js';
+import { createCard, deleteCard, handleLikeCard, handleDeleteCard } from './components/card.js';
 import { openModal, closeModal, overlayClose } from './components/modal.js';
 import { enableValidation, clearValidation } from './components/validation.js';
 import './pages/index.css';
@@ -76,7 +76,7 @@ function renderInitialCards(cards, userId) {
     try {
       const cardElement = createCard(
         cardData,
-        (element, id) => deleteCard(element, id).catch(console.error), // Обрабатываем ошибку удаления
+        handleDeleteCard,
         (likeButton, cardId, likeCount) => handleLikeCard(likeButton, cardId, likeCount, currentUserId),
         handleImageClick,
         elements.cardTemplate,
@@ -107,14 +107,23 @@ function showError(formElement, message) {
   setTimeout(() => errorElement.remove(), 3000);
 }
 
+function handleButtonState(submitButton, isLoading, loadingText = 'Сохранение...') {
+  if (isLoading) {
+    submitButton.dataset.originalText = submitButton.textContent;
+    submitButton.textContent = loadingText;
+    submitButton.disabled = true;
+  } else {
+    submitButton.textContent = submitButton.dataset.originalText || submitButton.textContent;
+    submitButton.disabled = false;
+  }
+}
+
 async function handleEditFormSubmit(evt) {
   evt.preventDefault();
   const submitButton = evt.submitter;
-  const originalText = submitButton.textContent;
   
   try {
-    submitButton.textContent = 'Сохранение...';
-    submitButton.disabled = true;
+    handleButtonState(submitButton, true, 'Сохранение...');
     
     const updatedUser = await updateUserProfile(
       elements.nameInput.value,
@@ -128,19 +137,16 @@ async function handleEditFormSubmit(evt) {
     console.error('Ошибка при обновлении профиля:', error);
     showError(evt.target, 'Не удалось сохранить изменения');
   } finally {
-    submitButton.textContent = originalText;
-    submitButton.disabled = false;
+    handleButtonState(submitButton, false);
   }
 }
 
 async function handleNewCardSubmit(evt) {
   evt.preventDefault();
   const submitButton = evt.submitter;
-  const originalText = submitButton.textContent;
   
   try {
-    submitButton.textContent = 'Создание...';
-    submitButton.disabled = true;
+    handleButtonState(submitButton, true, 'Сохранение...');
     
     const newCardData = {
       name: elements.cardNameInput.value,
@@ -152,7 +158,7 @@ async function handleNewCardSubmit(evt) {
     
     const cardElement = createCard(
       serverCardData, 
-      (element, id) => deleteCard(element, id).catch(console.error),
+      handleDeleteCard,
       handleLikeCard,
       handleImageClick,
       elements.cardTemplate,
@@ -168,19 +174,16 @@ async function handleNewCardSubmit(evt) {
     console.error('Ошибка при создании карточки:', error);
     showError(evt.target, 'Не удалось создать карточку');
   } finally {
-    submitButton.textContent = originalText;
-    submitButton.disabled = false;
+    handleButtonState(submitButton, false);
   }
 }
 
 async function handleAvatarFormSubmit(evt) {
   evt.preventDefault();
   const submitButton = evt.submitter;
-  const originalText = submitButton.textContent;
   
   try {
-    submitButton.textContent = 'Сохранение...';
-    submitButton.disabled = true;
+    handleButtonState(submitButton, true, 'Сохранение...');
     
     const newAvatarUrl = elements.avatarInput.value;
     const updatedUser = await updateUserAvatar(newAvatarUrl);
@@ -203,8 +206,7 @@ async function handleAvatarFormSubmit(evt) {
     console.error('Ошибка при обновлении аватара:', error);
     showError(evt.target, error.message || 'Не удалось обновить аватар');
   } finally {
-    submitButton.textContent = originalText;
-    submitButton.disabled = false;
+    handleButtonState(submitButton, false);
   }
 }
 
@@ -252,17 +254,9 @@ function setupEventListeners() {
 
   overlayClose(elements.allPopups);
 
-  if (elements.editForm) {
-    elements.editForm.addEventListener('submit', handleEditFormSubmit);
-  }
-  
-  if (elements.newCardForm) {
-    elements.newCardForm.addEventListener('submit', handleNewCardSubmit);
-  }
-
-  if (elements.avatarForm) {
-    elements.avatarForm.addEventListener('submit', handleAvatarFormSubmit);
-  }
+  elements.editForm?.addEventListener('submit', handleEditFormSubmit);
+  elements.newCardForm?.addEventListener('submit', handleNewCardSubmit);
+  elements.avatarForm?.addEventListener('submit', handleAvatarFormSubmit);
 }
 
 async function initApp() {
