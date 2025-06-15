@@ -64,7 +64,7 @@ const checkInputValidity = (formElement, inputElement, settings) => {
     showInputError(
       formElement,
       inputElement,
-      'Разрешены только латинские, кириллические буквы, знаки дефиса и пробелы',
+      inputElement.title,
       settings
     );
     return false;
@@ -84,11 +84,16 @@ const checkInputValidity = (formElement, inputElement, settings) => {
   return true;
 };
 
-// Переключение состояния кнопки
+// Переключение состояния кнопки с учетом паттерна
 const toggleButtonState = (inputList, buttonElement, settings) => {
   if (!buttonElement) return;
   
-  const hasInvalidInput = inputList.some(inputElement => !inputElement.validity.valid);
+  const hasInvalidInput = inputList.some(inputElement => {
+    if (inputElement.pattern) {
+      return !isValidTextInput(inputElement) || !inputElement.validity.valid;
+    }
+    return !inputElement.validity.valid;
+  });
   
   if (hasInvalidInput) {
     buttonElement.classList.add(settings.inactiveButtonClass);
